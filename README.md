@@ -6,6 +6,8 @@ Manual solution: We record audios of the survey as they are happening. An indepe
 
 Possible solution: Can we get AI to take the audio file and generate feedback to the surveyor?
 
+While we want to get the 'ideal choice' a surveyor should have entered using transcriptions, the feedback we give the surveyor can be categorized into questions that were not asked properly, questions that were not probed properly, and questions that were phrased in a leading manner.
+
 ## What we tried so far
 
 Inputs required:
