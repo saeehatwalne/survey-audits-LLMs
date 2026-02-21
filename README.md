@@ -19,6 +19,7 @@ Processes:
 - Generate an ideal question-by-question instructions file in json format (input would be the csv file + a survey training audio)
 - Generate a question-by-question feedback, including the ideal choice that should have been chosen. Note: this completely hinges on the transcription being correct
 
+Note: Apart from a question-by-question feedback, we did try a direct short concise feedback regarding the overall technique of interviewing, probing, some salient mistakes in interviewing. The only issue with this is that the feedback becomes quite generic and it picks up certain examples from the transcription on its own, with no insight into how it picks only these specific examples.
 
 ## 1. Transcription
 First step is to transcribe the survey interview audios in Odia/do direct English translations. We chunk the entire 40min-1 hour long audio into 10 min chunks each to do this. Gemini was able to transcribe only 10 min at a time. This reduces the time taken to transcribe too. Note: Sometimes extra Odia characters are in fact seen in the transcripts, which also makes the English translations wrong. Gemini request limits are not exhausted for transcriptions. Prompt used:
@@ -195,7 +196,8 @@ An example of how the instruction file looks in json format:
 ```
 ## 3. Getting ideal choices and feedback per question
 
-The instructions file and the transcript are the two inputs for this. Prompt used for this process:
+The instructions file and the transcript are the two inputs for this. 
+One prompt used for this process:
 
 ```
 # ============================================================
@@ -287,6 +289,82 @@ Return STRICT JSON ONLY in this exact schema:
 
     return extract_json(response.text)
 ```
+Another prompt tried for this process: (this prompt is slightly more concise, without the evidence from the transcript - to reduce the number of tokens). Problems with feedback do not reduce even if we use the entire Prompt 1 with 'evidence from transcript'.
+
+```
+prompt = f"""
+You are a survey quality auditor.
+
+Evaluate ONLY this question.
+
+QUESTION ID: {question_id}
+
+QUESTION TEXT:
+{question_data['question_text']}
+
+ANSWER CHOICES:
+{choices}
+
+EXPECTED INTERVIEWER BEHAVIOR:
+{question_data['expected_interviewer_behavior']}
+
+REQUIRED ELEMENTS:
+{json.dumps(question_data['required_elements'], ensure_ascii=False)}
+
+COMMON MISTAKES:
+{json.dumps(question_data['common_mistakes'], ensure_ascii=False)}
+
+FULL INTERVIEW TRANSCRIPT (English):
+{transcript}
+
+CRITICAL INSTRUCTIONS:
+- Be ACCURATE and FACTUAL - only use information present in the transcript
+- DO NOT hallucinate or make up information
+- If you cannot find this question in the transcript, set "was_question_asked" to false and "quality_rating" to "Not Asked"
+- Only quote text that actually appears in the transcript
+- If the question is not present, state "Question not found in transcript" in the overall_assessment
+- When in doubt, err on the side of marking something as not present rather than inventing evidence
+- If there is "inaudible" in the transcript, mark choices and mistakes as N/A for that question
+
+IMPORTANT - LEADING QUESTION GUIDANCE:
+- A question is only considered "leading" if it suggests a particular answer for an OPINION-based question
+- Verification questions (e.g., "Your mobile number is xyz, right?") are NOT leading - they are confirmatory
+- Factual confirmations are acceptable and should not be flagged as leading
+- Only flag as leading if the question pushes the respondent toward a specific opinion or subjective response
+
+For the choice fields:
+- "ideal_choice_based_on_response": Based on what the respondent actually said in the transcript, determine which choice from the provided ANSWER CHOICES should have been selected
+- IMPORTANT: Both fields must use the exact choice text/number from the ANSWER CHOICES provided above
+- If the question was not asked, set it to "N/A"
+- Handling numeric / open-ended responses:
+    - If the question expects a numeric or open-ended value (e.g., income, salary, age, amount, distance, time) and discrete ANSWER CHOICES are not applicable, then extract the exact numeric value stated by the respondent in the transcript and enter that value directly (e.g., 200, 35, 1500). 
+    - Do not convert numeric answers into categories unless explicit ANSWER CHOICES are provided.
+    - If the respondent gives a range, enter the midpoint of that range. If the question was not asked, still enter "N/A" 
+
+#CLEARLY DISTINGUISH BETWEEN EACH MEMBERS. THERE ARE SEPARATE VARIABLES GIVEN FOR QUESTIONS FOR EACH MEMBERS. FOLLOW THE MEMBER INDICES.
+# If respondent is member1, then other members such as daughter, son etc. are member2, member3 respectively.
+DO NOT JUMBLE UP MEMBERS. There can be references to other members in the responses. Decode it properly.
+Return STRICT JSON ONLY in this exact schema:
+
+RATING SCALE:
+- 3 = Good
+- 2 = Partial
+- 1 = Poor
+- 0 = Not Asked
+
+Return STRICT JSON ONLY in this exact schema:
+
+{{
+  "qid": "{question_id}",
+  "asked": "t or f",
+  "rating": number from 0 to 3,
+  "choice": "The correct answer choice based on respondent's actual response, or 'N/A'",
+  "mist": ["Max 2 sentences describing ONLY if mistakes were made. If no mistakes made, then keep empty."]
+}}
+"""
+
+```
+
 We were using multiprocessing for the same using multiple API keys:
 
 ```
