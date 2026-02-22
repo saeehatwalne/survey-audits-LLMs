@@ -6,7 +6,7 @@ Manual solution: We record audios of the survey as they are happening. An indepe
 
 Possible solution: Can we get AI to take the audio file and generate feedback to the surveyor?
 
-While we want to get the 'ideal choice' a surveyor should have entered using interview transcriptions, the feedback we give the surveyor can be categorized into questions that were not asked properly, questions that were not probed properly and questions that were phrased in a leading manner.
+While we want to get the 'ideal choice' a surveyor should have entered using interview transcriptions, the feedback we give the surveyor can be categorized into questions that were not asked properly, questions that were not probed properly and questions that were phrased in a leading manner. This readme file is an excerpt of some of the main things we tried. We went through multiple iterations of prompts to get to the prompts we use currently for this exercise.
 
 ## What we tried so far
 
@@ -22,7 +22,7 @@ Processes:
 Note: Apart from a question-by-question feedback, we did try a direct short concise feedback regarding the overall technique of interviewing, probing and some salient mistakes in interviewing. The only issue with this is that the feedback is quite generic and it picks up certain examples from the transcription on its own, with no insight into how it picks these specific examples.
 
 ## 1. Transcription
-First step is to transcribe the survey interview audios in Odia/do direct English translations. We chunk the entire 40min-1 hour long audio into 10 min chunks each to do this. Gemini was able to transcribe only 10 min at a time. This reduces the time taken to transcribe too. Note: Sometimes extra Odia characters are in fact seen in the transcripts, which also makes the English translations wrong. Gemini request limits are not exhausted for transcriptions. Prompt used:
+First step is to transcribe the survey interview audios in Odia/do direct English translations. We chunk the entire 40min-1 hour long audio into 10 min chunks each to do this. Gemini was able to transcribe only 10 min at a time. This reduces the time taken to transcribe too. Note: Sometimes extra Odia characters are in fact seen in the transcripts, which also makes the English translations wrong. Gemini request limits are not exhausted for transcriptions. We have noticed that the simpler the prompt, the better the transcription. Prompt used:
 
 ```
 # Generate transcription
